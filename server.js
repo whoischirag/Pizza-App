@@ -8,9 +8,10 @@ const session = require('express-session');
 const flash = require('express-flash');
 const MongoStore = require('connect-mongo');
 const mongoose = require("mongoose");
+const passport = require('passport');
 require('dotenv').config();
 
-const url = "mongodb://localhost:27017/pizza";
+const url = process.env.MONGODB_URI || "mongodb://localhost:27017/pizza"; // Use environment variable for production
 
 // Connect to MongoDB
 mongoose.connect(url, {
@@ -37,19 +38,26 @@ app.use(session({
   cookie: { maxAge: 1000 * 60 * 60 * 24 } // 1 day
 }));
 
+// Passport config
+const passportInit = require('./app/config/passport');
+passportInit(passport);
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Flash messages
 app.use(flash());
 
 // Assets
 app.use(express.static("public"));
-app.use(express.json())
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
-//global middleware
-app.use((req,res,next)=>{
-  res.locals.session= req.session
-  next()
-
-
-})
+// Global middleware
+app.use((req, res, next) => {
+  res.locals.session = req.session;
+  res.locals.user = req.user
+  next();
+});
 
 // Setting template engine
 const viewsPath = path.join(__dirname, "/resources/views");
