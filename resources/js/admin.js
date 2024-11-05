@@ -1,11 +1,17 @@
 import { generate } from "laravel-mix/src/BabelConfig";
 import moment from 'moment'; // Ensure moment is imported
 import axios from "axios";
+import io from "socket.io-client";  // Correct import for client-side socket
+import Noty from "noty";
+
+// Initialize the socket connection
+const socket = io();  // Default server URL, or specify your URL if needed
 
 function initAdmin() {
   const orderTableBody = document.querySelector("#orderTableBody");
   let orders = [];
 
+  // Fetch the initial list of orders
   axios
     .get("/admin/orders", {
       headers: {
@@ -14,13 +20,14 @@ function initAdmin() {
     })
     .then((res) => {
       orders = res.data; // Assign to outer variable
-      const markup = generateMarkup(orders); // Assign to outer variable
+      const markup = generateMarkup(orders); // Generate markup for orders
       orderTableBody.innerHTML = markup;
     })
     .catch((err) => {
       console.error("Error fetching orders:", err);
     });
 
+  // Render the items within each order
   function renderItems(items) {
     let parsedItems = Object.values(items);
     return parsedItems.map((menuItem) => {
@@ -30,6 +37,7 @@ function initAdmin() {
     }).join('');
   }
 
+  // Generate HTML markup for all orders
   function generateMarkup(orders) {
     return orders.map(order => {
       return `
@@ -60,11 +68,6 @@ function initAdmin() {
                   </option>
                 </select>
               </form>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
             </div>
           </td>
           <td class="border px-4 py-2">
@@ -74,6 +77,24 @@ function initAdmin() {
       `;
     }).join('');
   }
+
+  // Listen for new orders via WebSocket (socket.io)
+  socket.on('orderPlaced', (order) => {
+    // Show a notification for the new order
+    new Noty({
+      type: "success",
+      timeout: 800,
+      text: "New Orders!",
+      progressBar: false,
+    }).show();
+
+    // Add the new order at the top of the orders array
+    orders.unshift(order);
+
+    // Re-render the order table
+    orderTableBody.innerHTML = '';  // Clear the current table
+    orderTableBody.innerHTML = generateMarkup(orders);  // Re-render with the new order
+  });
 }
 
 export default initAdmin;
