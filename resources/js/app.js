@@ -45,7 +45,7 @@ if (alertMsg) {
   }, 1500);
 }
 
-initAdmin(); // Initialize admin functionality
+
 
 // Order status handling
 let statuses = document.querySelectorAll(".status-line");
@@ -94,7 +94,7 @@ let adminAreaPath =window.location.pathname
 
 
 if(adminAreaPath.includes('admin')){
-
+  initAdmin(); // Initialize admin functionality
 socket.emit('join','adminRoom')
 
 
